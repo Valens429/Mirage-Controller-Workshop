@@ -3,538 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mirage Controller | Workshop Pro Hub</title>
+    <title>Mirage Workshop | Simple & Fast</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
-        /* =========================================
-           1. SISTEMA DE VARIABLES (THEME CORE)
-           ========================================= 
-        */
-        :root {
-            --primary: #9146ff;
-            --primary-glow: rgba(145, 70, 255, 0.4);
-            --secondary: #00f593;
-            --gold: #ffb400;
-            --bg-body: #050508;
-            --bg-card: rgba(22, 22, 30, 0.6);
-            --bg-input: #0f0f15;
-            --text-main: #ffffff;
-            --text-dim: #9494b8;
-            --border: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(145, 70, 255, 0.2);
-            --error: #ff4d4d;
-            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        /* =========================================
-           2. RESET & GLOBAL STYLES
-           ========================================= 
-        */
-        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+        :root { --p: #9146ff; --bg: #0f0f15; --card: #1a1a24; --txt: #ffffff; --dim: #9494b8; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--txt); margin: 0; padding: 20px; }
+        .wrapper { max-width: 800px; margin: auto; }
         
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            overflow-x: hidden;
-            line-height: 1.5;
-            background-image: 
-                radial-gradient(circle at 10% 10%, rgba(145, 70, 255, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 90%, rgba(0, 245, 147, 0.05) 0%, transparent 40%);
-        }
+        /* Formulario */
+        .box { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #2f2f3d; margin-bottom: 30px; }
+        input, textarea { width: 100%; background: #0b0b0e; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; }
+        .btn { background: var(--p); color: #fff; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: 900; cursor: pointer; transition: 0.3s; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn:disabled { background: #444; cursor: not-allowed; }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-body); }
-        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+        /* Lista de Mods */
+        .mod-card { background: var(--card); border-left: 5px solid var(--p); padding: 20px; border-radius: 10px; margin-bottom: 15px; position: relative; }
+        .mod-card.vip { border-left-color: #ffb400; }
+        .mod-card h3 { margin: 0 0 5px 0; color: #00f593; }
+        .mod-card.vip h3 { color: #ffb400; }
+        .mod-card p { margin: 5px 0; font-size: 0.9rem; color: var(--dim); }
+        .dl-btn { background: #333; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; margin-top: 10px; cursor: pointer; font-weight: 700; }
+        .dl-btn:hover { background: var(--p); }
 
-        /* =========================================
-           3. NAVIGATION (GLASS NAV)
-           ========================================= 
-        */
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.2rem 8%;
-            background: rgba(5, 5, 8, 0.7);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .brand { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 12px; }
-        .brand i { color: var(--primary); filter: drop-shadow(0 0 8px var(--primary)); }
-        .brand span { color: var(--primary); }
-
-        .status-pill {
-            background: rgba(0, 245, 147, 0.1);
-            color: var(--secondary);
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            border: 1px solid rgba(0, 245, 147, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* =========================================
-           4. HERO & LAYOUT
-           ========================================= 
-        */
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-
-        header.hero {
-            padding: 80px 0 40px;
-            text-align: center;
-            animation: fadeIn 1s ease;
-        }
-
-        .hero h1 { font-size: 4rem; font-weight: 800; letter-spacing: -2px; line-height: 1; margin-bottom: 20px; }
-        .hero p { color: var(--text-dim); font-size: 1.2rem; max-width: 600px; margin: 0 auto; }
-
-        /* =========================================
-           5. UPLOAD PANEL (NEOMORPHISM GLASS)
-           ========================================= 
-        */
-        .upload-section {
-            background: var(--bg-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 32px;
-            padding: 50px;
-            backdrop-filter: blur(20px);
-            margin: 40px 0 80px;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .upload-section::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(145, 70, 255, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
-
-        .input-box { display: flex; flex-direction: column; gap: 10px; }
-        .input-box label { font-size: 0.85rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-
-        input, textarea {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: #fff;
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 20px rgba(145, 70, 255, 0.15); }
-
-        .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            margin-bottom: 25px;
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .drop-zone:hover { border-color: var(--primary); background: rgba(145, 70, 255, 0.05); }
-        .drop-zone i { font-size: 3rem; color: var(--primary); margin-bottom: 15px; }
-        .drop-zone h4 { font-size: 1.1rem; margin-bottom: 5px; }
-        .drop-zone p { font-size: 0.8rem; color: var(--text-dim); }
-
-        .btn-launch {
-            background: linear-gradient(135deg, var(--primary), #a970ff);
-            color: #fff;
-            border: none;
-            padding: 20px;
-            border-radius: 18px;
-            font-size: 1.1rem;
-            font-weight: 800;
-            cursor: pointer;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            transition: var(--transition);
-        }
-
-        .btn-launch:hover { transform: translateY(-5px); box-shadow: 0 15px 30px var(--primary-glow); }
-        .btn-launch:disabled { filter: grayscale(1); cursor: not-allowed; transform: none; }
-
-        .limit-info { text-align: center; margin-top: 15px; font-size: 0.8rem; color: var(--text-dim); }
-
-        /* =========================================
-           6. MOD CARDS & GRID
-           ========================================= 
-        */
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 40px;
-            font-size: 1.8rem;
-            font-weight: 800;
-        }
-
-        .section-title i { color: var(--gold); }
-
-        .mods-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 30px;
-            margin-bottom: 80px;
-        }
-
-        .mod-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            transition: var(--transition);
-            position: relative;
-            animation: slideUp 0.6s ease backwards;
-        }
-
-        .mod-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--primary);
-            background: rgba(25, 25, 35, 0.8);
-        }
-
-        .mod-card.vip { border: 1px solid rgba(255, 180, 0, 0.3); }
-        .mod-card.vip::before {
-            content: 'VERIFICADO'; position: absolute; top: 20px; right: 20px;
-            background: var(--gold); color: #000; font-size: 0.6rem; font-weight: 900;
-            padding: 4px 10px; border-radius: 6px;
-        }
-
-        .mod-card h3 { font-size: 1.5rem; margin-bottom: 8px; color: var(--secondary); }
-        .mod-card.vip h3 { color: var(--gold); }
-        
-        .mod-meta { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; display: flex; gap: 10px; }
-        .mod-meta b { color: var(--text-main); }
-
-        .mod-body { flex-grow: 1; font-size: 0.95rem; color: #ced4da; margin-bottom: 25px; line-height: 1.6; }
-
-        .btn-download {
-            background: #1a1a24;
-            color: #fff;
-            padding: 14px;
-            border-radius: 12px;
-            text-align: center;
-            text-decoration: none;
-            font-weight: 700;
-            border: 1px solid var(--border);
-            transition: var(--transition);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-download:hover { background: var(--primary); border-color: var(--primary); }
-
-        /* =========================================
-           7. ALERTS & NOTIFICATIONS
-           ========================================= 
-        */
-        .alert-warning {
-            background: rgba(255, 180, 0, 0.05);
-            border: 1px solid rgba(255, 180, 0, 0.1);
-            color: var(--gold);
-            padding: 20px;
-            border-radius: 16px;
-            margin-bottom: 40px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-
-        /* =========================================
-           8. ANIMATIONS
-           ========================================= 
-        */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .fa-spin-custom { animation: spin 1s linear infinite; }
-
+        .tag { font-size: 0.7rem; background: #333; padding: 3px 8px; border-radius: 4px; color: #fff; text-transform: uppercase; }
         .hidden { display: none; }
-
-        footer { text-align: center; padding: 80px 20px; color: var(--text-dim); border-top: 1px solid var(--border); margin-top: 50px; }
-
-        @media (max-width: 768px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 2.5rem; }
-            .upload-section { padding: 30px; }
-        }
     </style>
 </head>
 <body>
 
-    <nav>
-        <div class="brand">
-            <i class="fa-solid fa-bolt-lightning"></i>
-            MIRAGE <span>WORKSHOP</span>
-        </div>
-        <div class="status-pill">
-            <i class="fa-solid fa-circle-dot"></i> DB CONNECTED
-        </div>
-    </nav>
+<div class="wrapper">
+    <h1 style="color:var(--p)">🛠️ Mirage Workshop</h1>
+    <p style="color:var(--dim)">Subí y descargá comandos para tu controller.</p>
 
-    <div class="container">
+    <div class="box">
+        <h2 style="margin-top:0">Publicar Mod</h2>
+        <input type="text" id="nombre" placeholder="Nombre del Mod (ej: !hola)">
+        <input type="text" id="autor" placeholder="Tu nombre / Nick">
+        <textarea id="desc" placeholder="¿Qué hace este comando?"></textarea>
         
-        <header class="hero">
-            <h1>Potenciá tu Stream</h1>
-            <p>Descubrí, compartí y descargá comandos avanzados para Mirage Controller. La central de mods más picante de la comunidad.</p>
-        </header>
-
-        <section class="upload-section">
-            <div style="margin-bottom: 30px;">
-                <h2 style="font-size: 1.8rem; margin-bottom: 5px;">📤 Compartir mi creación</h2>
-                <p style="color: var(--text-dim);">Tus archivos se guardan en la nube para que otros los usen.</p>
-            </div>
-
-            <div class="form-grid">
-                <div class="input-box">
-                    <label>Nombre del Mod</label>
-                    <input type="text" id="nombre" placeholder="Ej: !fireworks_v2">
-                </div>
-                <div class="input-box">
-                    <label>Tu Firma (Nick)</label>
-                    <input type="text" id="autor" placeholder="@tu_usuario">
-                </div>
-            </div>
-
-            <div class="input-box" style="margin-bottom: 25px;">
-                <label>¿Qué hace este comando?</label>
-                <textarea id="descripcion" rows="3" placeholder="Explicá cómo configurarlo o qué efecto visual tiene..."></textarea>
-            </div>
-
-            <label for="file-upload" class="drop-zone" id="drop-zone-ui">
-                <i class="fa-solid fa-file-arrow-up"></i>
-                <h4 id="file-status">Soltá tu .json acá</h4>
-                <p>O hacé clic para buscar en tu carpeta</p>
-                <input type="file" id="file-upload" accept=".json" class="hidden" onchange="handleFileSelect(this)">
-            </label>
-
-            <input type="hidden" id="json_raw">
-            <button class="btn-launch" id="btn-submit" onclick="submitToWorkshop()">
-                <i class="fa-solid fa-paper-plane"></i> LANZAR AL WORKSHOP
-            </button>
-            <p class="limit-info" id="limit-text">Cargando límites diarios...</p>
-        </section>
-
-        <div class="alert-warning">
-            <i class="fa-solid fa-shield-halved" style="font-size: 1.5rem;"></i>
-            <div>
-                <b>Zona de Pruebas:</b> Los mods de la sección "Comunidad" son subidos por terceros. 
-                Recomendamos revisar el JSON antes de importarlo si no conocés al autor.
-            </div>
-        </div>
-
-        <div class="section-title">
-            <i class="fa-solid fa-crown"></i>
-            <h2>MODS VERIFICADOS</h2>
-        </div>
-        <div id="grid-vip" class="mods-grid">
-            </div>
-
-        <div class="section-title" style="margin-top: 50px;">
-            <i class="fa-solid fa-users-viewfinder"></i>
-            <h2>FEED DE LA COMUNIDAD</h2>
-        </div>
-        <div id="grid-community" class="mods-grid">
-            </div>
-
+        <p style="font-size:0.8rem; margin-bottom:5px;">Seleccioná tu archivo .json:</p>
+        <input type="file" id="file" accept=".json" onchange="procesarArchivo(this)">
+        
+        <input type="hidden" id="json_data">
+        <button class="btn" id="btn-pub" onclick="subirMod()">PUBLICAR AHORA</button>
+        <p id="limit-msg" style="font-size:0.7rem; text-align:center; color:var(--dim); margin-top:10px;"></p>
     </div>
 
-    <footer>
-        <p><b>Mirage Controller Workshop v1.0 BETA</b></p>
-        <p style="margin-top: 10px; font-size: 0.8rem;">Hecho por y para streamers. Powered by Chatii Tech.</p>
-    </footer>
+    <h2>⭐ Destacados</h2>
+    <div id="lista-vip"></div>
 
-    <script>
-        // --- 1. CONFIGURACIÓN ---
-        const SB_URL = 'https://wztjpzdcuokptmhemzsq.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dGpwemRjdW9rcHRtaGVtenNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNTU4MjMsImV4cCI6MjA5MDkzMTgyM30.cYKZCvV4KfvrNd-RZZLNMTnRPWMreQgr9ClCP3wehR0';
-        
-        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-        const MAX_DAILY = 5;
+    <h2 style="margin-top:40px">🌐 Comunidad</h2>
+    <div id="lista-comu"></div>
+</div>
 
-        // --- 2. GESTIÓN DE LÍMITES POR IP (LOCAL) ---
-        function checkDailyLimit() {
-            const today = new Date().toDateString();
-            let data = JSON.parse(localStorage.getItem('mirage_workshop_data')) || { date: today, count: 0 };
-            
-            if (data.date !== today) {
-                data = { date: today, count: 0 };
-            }
-            
-            const remaining = MAX_DAILY - data.count;
-            document.getElementById('limit-text').innerText = `Te quedan ${remaining} subidas disponibles por hoy.`;
-            return data;
-        }
+<script>
+    // 1. CONFIGURACIÓN (Sin choque de nombres)
+    const URL_SB = 'https://wztjpzdcuokptmhemzsq.supabase.co';
+    const KEY_SB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dGpwemRjdW9rcHRtaGVtenNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNTU4MjMsImV4cCI6MjA5MDkzMTgyM30.cYKZCvV4KfvrNd-RZZLNMTnRPWMreQgr9ClCP3wehR0';
+    
+    // El cliente se llama sbClient para evitar líos
+    const sbClient = supabase.createClient(URL_SB, KEY_SB);
+    const LIMIT = 5;
 
-        function updateDailyLimit() {
-            const data = checkDailyLimit();
-            data.count += 1;
-            localStorage.setItem('mirage_workshop_data', JSON.stringify(data));
-            checkDailyLimit();
-        }
+    // 2. LÍMITE DIARIO
+    function getStats() {
+        const hoy = new Date().toDateString();
+        let stats = JSON.parse(localStorage.getItem('mirage_stats')) || { dia: hoy, cant: 0 };
+        if (stats.dia !== hoy) stats = { dia: hoy, cant: 0 };
+        document.getElementById('limit-msg').innerText = `Subidas hoy: ${stats.cant} / ${LIMIT}`;
+        return stats;
+    }
 
-        // --- 3. PROCESAMIENTO DE ARCHIVOS ---
-        function handleFileSelect(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            if (file.size > 2 * 1024 * 1024) {
-                alert("❌ El archivo es demasiado pesado (Máx 2MB).");
-                input.value = "";
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const content = e.target.result;
-                    JSON.parse(content); // Validar formato JSON
-                    document.getElementById('json_raw').value = content;
-                    document.getElementById('nombre').value = file.name.replace('.json', '');
-                    
-                    const status = document.getElementById('file-status');
-                    status.innerText = "✅ " + file.name + " CARGADO";
-                    status.parentElement.style.borderColor = "var(--secondary)";
-                } catch (err) {
-                    alert("❌ El archivo no es un JSON válido.");
-                    input.value = "";
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- 4. PUBLICAR EN DB ---
-        async function submitToWorkshop() {
-            const limit = checkDailyLimit();
-            if (limit.count >= MAX_DAILY) {
-                alert("⛔ Límite alcanzado. ¡Descansá un poco y volvé mañana!");
-                return;
-            }
-
-            const btn = document.getElementById('btn-submit');
-            const nombre = document.getElementById('nombre').value;
-            const autor = document.getElementById('autor').value || 'Anónimo';
-            const desc = document.getElementById('descripcion').value;
-            const json = document.getElementById('json_raw').value;
-
-            if (!nombre || !json) {
-                alert("⚠️ Necesitamos al menos un nombre y el archivo JSON.");
-                return;
-            }
-
+    // 3. LEER JSON
+    function procesarArchivo(el) {
+        const archivo = el.files[0];
+        if (!archivo) return;
+        const lector = new FileReader();
+        lector.onload = (e) => {
             try {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin-custom"></i> PROCESANDO...';
+                JSON.parse(e.target.result); // Validar
+                document.getElementById('json_data').value = e.target.result;
+                if(!document.getElementById('nombre').value) {
+                    document.getElementById('nombre').value = archivo.name.replace('.json', '');
+                }
+            } catch(err) { alert("Archivo JSON inválido fiera."); el.value = ""; }
+        };
+        lector.readAsText(archivo);
+    }
 
-                const { error } = await supabase.from('mods').insert([
-                    { 
-                        nombre, 
-                        autor, 
-                        descripcion: desc, 
-                        comando_json: JSON.parse(json) 
-                    }
-                ]);
+    // 4. SUBIR A SUPABASE
+    async function subirMod() {
+        const stats = getStats();
+        if (stats.cant >= LIMIT) return alert("Ya subiste mucho por hoy, descansá un poco.");
 
-                if (error) throw error;
+        const btn = document.getElementById('btn-pub');
+        const n = document.getElementById('nombre').value;
+        const a = document.getElementById('autor').value || 'Anónimo';
+        const d = document.getElementById('desc').value;
+        const j = document.getElementById('json_data').value;
 
-                updateDailyLimit();
-                btn.style.background = "var(--secondary)";
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> ¡PUBLICADO CON ÉXITO!';
-                
-                setTimeout(() => location.reload(), 1500);
+        if (!n || !j) return alert("Falta el nombre o el archivo.");
 
-            } catch (err) {
-                alert("❌ Error: " + err.message);
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> LANZAR AL WORKSHOP';
-            }
-        }
-
-        // --- 5. CARGAR Y MOSTRAR MODS ---
-        async function fetchMods() {
-            const { data, error } = await supabase
-                .from('mods')
-                .select('*')
-                .order('fecha_subida', { ascending: false });
-
-            if (error) return console.error(error);
-
-            const vipGrid = document.getElementById('grid-vip');
-            const commGrid = document.getElementById('grid-community');
+        try {
+            btn.disabled = true; btn.innerText = "SUBIENDO...";
             
-            vipGrid.innerHTML = '';
-            commGrid.innerHTML = '';
+            const { error } = await sbClient.from('mods').insert([
+                { nombre: n, autor: a, descripcion: d, comando_json: JSON.parse(j) }
+            ]);
 
-            data.forEach((mod, index) => {
-                const card = document.createElement('div');
-                card.className = `mod-card ${mod.verificado ? 'vip' : ''}`;
-                card.style.animationDelay = `${index * 0.05}s`;
+            if (error) throw error;
 
-                card.innerHTML = `
-                    <h3>${mod.nombre}</h3>
-                    <div class="mod-meta">
-                        <span><i class="fa-solid fa-user"></i> <b>${mod.autor}</b></span>
-                        <span><i class="fa-solid fa-calendar"></i> ${new Date(mod.fecha_subida).toLocaleDateString()}</span>
-                    </div>
-                    <div class="mod-body">${mod.descripcion || 'Sin descripción adicional.'}</div>
-                    <button class="btn-download" onclick="triggerDownload('${mod.id}', '${mod.nombre}')">
-                        <i class="fa-solid fa-cloud-arrow-down"></i> DESCARGAR .JSON
-                    </button>
-                    <textarea id="raw-${mod.id}" class="hidden">${JSON.stringify(mod.comando_json)}</textarea>
-                `;
-
-                if (mod.verificado) vipGrid.appendChild(card);
-                else commGrid.appendChild(card);
-            });
-
-            if (vipGrid.innerHTML === '') vipGrid.innerHTML = '<p style="color:var(--text-dim)">No hay destacados todavía.</p>';
+            stats.cant += 1;
+            localStorage.setItem('mirage_stats', JSON.stringify(stats));
+            alert("¡Mod publicado joyita!");
+            location.reload();
+        } catch (err) {
+            alert("Error: " + err.message);
+            btn.disabled = false; btn.innerText = "PUBLICAR AHORA";
         }
+    }
 
-        // --- 6. DESCARGAR ---
-        function triggerDownload(id, filename) {
-            const json = document.getElementById('raw-' + id).value;
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${filename}.json`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        }
+    // 5. CARGAR LISTA
+    async function cargarTodo() {
+        const { data, error } = await sbClient.from('mods').select('*').order('fecha_subida', { ascending: false });
+        if (error) return console.log(error);
 
-        // INICIAR WORKSHOP
-        checkDailyLimit();
-        fetchMods();
-    </script>
+        const vipBox = document.getElementById('lista-vip');
+        const comuBox = document.getElementById('lista-comu');
+
+        data.forEach(m => {
+            const card = document.createElement('div');
+            card.className = `mod-card ${m.verificado ? 'vip' : ''}`;
+            card.innerHTML = `
+                <h3>${m.verificado ? '⭐ ' : ''}${m.nombre}</h3>
+                <p><span class="tag">Autor: ${m.autor}</span></p>
+                <p style="color:#eee">${m.descripcion || 'Sin descripción.'}</p>
+                <button class="dl-btn" onclick="bajar('${m.id}', '${m.nombre}')">📥 Descargar JSON</button>
+                <textarea id="raw-${m.id}" class="hidden">${JSON.stringify(m.comando_json)}</textarea>
+            `;
+            if (m.verificado) vipBox.appendChild(card);
+            else comuBox.appendChild(card);
+        });
+    }
+
+    // 6. DESCARGAR
+    function bajar(id, nom) {
+        const txt = document.getElementById('raw-' + id).value;
+        const blob = new Blob([txt], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = nom + ".json";
+        link.click();
+    }
+
+    // INICIO
+    getStats();
+    cargarTodo();
+</script>
+
 </body>
 </html>
