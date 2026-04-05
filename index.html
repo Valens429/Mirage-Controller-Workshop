@@ -1,159 +1,228 @@
-const U_S = 'https://wztjpzdcuokptmhemzsq.supabase.co';
-const K_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dGpwemRjdW9rcHRtaGVtenNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNTU4MjMsImV4cCI6MjA5MDkzMTgyM30.cYKZCvV4KfvrNd-RZZLNMTnRPWMreQgr9ClCP3wehR0';
-const s_c = window.supabase.createClient(U_S, K_S);
-
-const L_D = 5;
-const MODS_PER_PAGE = 9;
-let currentPage = 0;
-let totalLoaded = 0;
-
-function g_l() {
-    const t = new Date().toDateString();
-    let d = JSON.parse(localStorage.getItem('_m_stats')) || { d: t, c: 0 };
-    if (d.d !== t) d = { d: t, c: 0 };
-    const r = Math.max(0, L_D - d.c);
-    const m = document.getElementById('l_m');
-    if(m) m.innerText = `Subidas disponibles para hoy: ${r} / ${L_D}`;
-    return d;
-}
-
-function u_l() {
-    const d = g_l();
-    d.c += 1;
-    localStorage.setItem('_m_stats', JSON.stringify(d));
-    g_l();
-}
-
-function h_f(i) {
-    const f = i.files[0];
-    if (!f) return;
-    if (f.size > 2 * 1024 * 1024) {
-        alert("Archivo excedido.");
-        i.value = "";
-        return;
-    }
-    const r = new FileReader();
-    r.onload = (e) => {
-        try {
-            const c = e.target.result;
-            JSON.parse(c);
-            document.getElementById('j_r').value = c;
-            const n = document.getElementById('n_m');
-            if(!n.value) n.value = f.name.replace('.json', '');
-            const s = document.getElementById('f_s');
-            s.innerText = "ARCHIVO LISTO: " + f.name;
-            s.parentElement.style.borderColor = "#00f593";
-        } catch (err) {
-            alert("JSON corrupto.");
-            i.value = "";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mirage Workshop Omega | The Ultimate Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --p: #9146ff;
+            --pg: rgba(145, 70, 255, 0.4);
+            --s: #00f593;
+            --g: #ffb400;
+            --bb: #050508;
+            --bc: rgba(22, 22, 30, 0.7);
+            --bi: #0a0a0f;
+            --tm: #ffffff;
+            --td: #9494b8;
+            --br: rgba(255, 255, 255, 0.06);
+            --tr: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-    };
-    r.readAsText(f);
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; border: none; text-decoration: none; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bb);
+            color: var(--tm);
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(145, 70, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(0, 245, 147, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            line-height: 1.6;
+        }
+        nav {
+            position: sticky; top: 0; z-index: 999;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5rem 8%; background: rgba(5, 5, 8, 0.8);
+            backdrop-filter: blur(20px); border-bottom: 1px solid var(--br);
+        }
+        .brand { font-size: 1.8rem; font-weight: 900; display: flex; align-items: center; gap: 12px; }
+        .brand i { color: var(--p); filter: drop-shadow(0 0 8px var(--p)); }
+        .brand span { color: var(--p); }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .hero { padding: 80px 0 40px; text-align: center; }
+        .hero h1 { font-size: 4.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 20px; }
+        .upload-section {
+            background: var(--bc); border: 1px solid var(--br); border-radius: 35px;
+            padding: 50px; backdrop-filter: blur(30px); margin-bottom: 80px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        }
+        .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
+        .input-box { display: flex; flex-direction: column; gap: 10px; }
+        .input-box label { font-size: 0.8rem; font-weight: 800; color: var(--td); text-transform: uppercase; letter-spacing: 1px; }
+        input, textarea {
+            background: var(--bi); border: 1px solid var(--br); color: #fff;
+            padding: 18px; border-radius: 18px; font-size: 1rem; transition: var(--tr);
+        }
+        input:focus, textarea:focus { border-color: var(--p); box-shadow: 0 0 20px rgba(145, 70, 255, 0.1); }
+        .dz {
+            border: 2px dashed var(--br); border-radius: 20px; padding: 40px;
+            text-align: center; cursor: pointer; transition: var(--tr); margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 10px;
+        }
+        .dz:hover { border-color: var(--p); background: rgba(145, 70, 255, 0.05); }
+        .dz i { font-size: 2.5rem; color: var(--p); }
+        .btn-main {
+            background: linear-gradient(135deg, var(--p), #7c3aed); color: #fff;
+            padding: 20px; border-radius: 20px; font-size: 1.1rem; font-weight: 900;
+            cursor: pointer; width: 100%; transition: var(--tr); display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-main:hover { transform: translateY(-5px); box-shadow: 0 15px 30px var(--pg); }
+        .btn-main:disabled { filter: grayscale(1); cursor: not-allowed; opacity: 0.5; }
+        .m-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; margin-bottom: 50px; }
+        .m-card {
+            background: var(--bc); border: 1px solid var(--br); border-radius: 28px;
+            padding: 30px; transition: var(--tr); display: flex; flex-direction: column; position: relative;
+        }
+        .m-card:hover { transform: translateY(-10px); border-color: var(--p); background: rgba(25, 25, 35, 0.8); }
+        .m-card.vip { border: 1px solid rgba(255, 180, 0, 0.2); }
+        .m-card.vip::after {
+            content: 'ELITE'; position: absolute; top: 20px; right: 20px;
+            background: var(--g); color: #000; font-size: 0.6rem; font-weight: 900;
+            padding: 4px 10px; border-radius: 6px;
+        }
+        .card-stats { display: flex; gap: 15px; margin-bottom: 15px; font-size: 0.85rem; color: var(--td); }
+        .card-stats i { color: var(--s); }
+        .m-card h3 { font-size: 1.6rem; color: var(--s); margin-bottom: 10px; font-weight: 800; }
+        .m-card.vip h3 { color: var(--g); }
+        .m-body { flex-grow: 1; color: #ced4da; margin-bottom: 25px; font-size: 0.95rem; }
+        .rating-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .stars { display: flex; gap: 4px; color: #444; }
+        .stars i { cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
+        .stars i.active { color: var(--g); }
+        .stars i:hover { transform: scale(1.3); }
+        .btn-dl {
+            background: #1a1a24; color: #fff; padding: 14px; border-radius: 14px;
+            text-align: center; font-weight: 700; border: 1px solid var(--br); transition: var(--tr);
+            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
+        }
+        .btn-dl:hover { background: var(--p); border-color: var(--p); }
+        .load-more {
+            display: block; margin: 50px auto; background: transparent; color: var(--p);
+            border: 2px solid var(--p); padding: 15px 40px; border-radius: 50px;
+            font-weight: 900; cursor: pointer; transition: var(--tr);
+        }
+        .load-more:hover { background: var(--p); color: #fff; }
+        .hidden { display: none; }
+        footer { text-align: center; padding: 60px; color: var(--td); border-top: 1px solid var(--br); margin-top: 80px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="brand"><i class="fa-solid fa-fire"></i> MIRAGE <span>WORKSHOP</span></div>
+        <div id="l_m" style="font-size: 0.8rem; color: var(--td); font-weight: 700;"></div>
+    </nav>
+    <div class="container">
+        <header class="hero">
+            <h1>The Peak of Gaming</h1>
+            <p style="color: var(--td); font-size: 1.2rem;">Descargá, votá y compartí los mejores comandos del mundo.</p>
+        </header>
+        <section class="upload-section">
+            <div class="f-grid">
+                <div class="input-box"><label>Nombre del Mod</label><input type="text" id="n_m" placeholder="!mi_comando"></div>
+                <div class="input-box"><label>Tu Nick</label><input type="text" id="a_m" placeholder="@usuario"></div>
+            </div>
+            <div class="input-box" style="margin-bottom: 25px;"><label>Descripción</label><textarea id="d_m" rows="3" placeholder="Contanos qué hace..."></textarea></div>
+            <label for="f_u" class="dz"><i class="fa-solid fa-cloud-arrow-up"></i><h4 id="f_s">Seleccioná tu archivo .json</h4><input type="file" id="f_u" accept=".json" class="hidden" onchange="h_f(this)"></label>
+            <input type="hidden" id="j_r">
+            <button class="btn-main" id="b_s" onclick="s_w()"><i class="fa-solid fa-paper-plane"></i> LANZAR AL WORKSHOP</button>
+        </section>
+        <h2 style="margin-bottom: 30px; font-weight: 900;"><i class="fa-solid fa-star" style="color: var(--g);"></i> ELITE SELECTION</h2>
+        <div id="g_v" class="m-grid"></div>
+        <h2 style="margin-bottom: 30px; margin-top: 60px; font-weight: 900;"><i class="fa-solid fa-globe"></i> GLOBAL FEED</h2>
+        <div id="g_c" class="m-grid"></div>
+        <button id="btn-load" class="load-more hidden" onclick="loadMore()">CARGAR MÁS MODS</button>
+    </div>
+    <footer><b>MIRAGE WORKSHOP OMEGA</b> &copy; 2026 - Hecho para gente polenta.</footer>
+    <script>
+        const U_S = 'https://wztjpzdcuokptmhemzsq.supabase.co';
+        const K_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dGpwemRjdW9rcHRtaGVtenNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNTU4MjMsImV4cCI6MjA5MDkzMTgyM30.cYKZCvV4KfvrNd-RZZLNMTnRPWMreQgr9ClCP3wehR0';
+        const sb = window.supabase.createClient(U_S, K_S);
+        const LIMIT = 5;
+        const PAGE_SIZE = 9;
+        let currentPage = 0;
 
-async function s_w() {
-    const l = g_l();
-    if (l.c >= L_D) return alert("Cuota diaria completa.");
-    const b = document.getElementById('b_s');
-    const n = document.getElementById('n_m').value;
-    const a = document.getElementById('a_m').value || 'Anónimo';
-    const d = document.getElementById('d_m').value;
-    const j = document.getElementById('j_r').value;
-    if (!n || !j) return alert("Faltan datos críticos.");
-    try {
-        b.disabled = true;
-        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SINCRONIZANDO...';
-        const { error: e } = await s_c.from('mods').insert([{ nombre: n, autor: a, descripcion: d, comando_json: JSON.parse(j) }]);
-        if (e) throw e;
-        u_l();
-        b.style.background = "#00f593";
-        b.innerHTML = '<i class="fa-solid fa-check"></i> ÉXITO TOTAL';
-        setTimeout(() => location.reload(), 1500);
-    } catch (err) {
-        alert("Error de red: " + err.message);
-        b.disabled = false;
-        b.innerHTML = '<i class="fa-solid fa-bolt"></i> DESPLEGAR AL WORKSHOP';
-    }
-}
-
-async function f_m(append = false) {
-    try {
-        const from = currentPage * MODS_PER_PAGE;
-        const to = from + MODS_PER_PAGE - 1;
-
-        const { data: d, error: e } = await s_c
-            .from('mods')
-            .select('*')
-            .order('fecha_subida', { ascending: false })
-            .range(from, to);
-
-        if (e) throw e;
-
-        const v_g = document.getElementById('g_v');
-        const c_g = document.getElementById('g_c');
-
-        if (!append) {
-            v_g.innerHTML = '';
-            c_g.innerHTML = '';
+        function g_l() {
+            const t = new Date().toDateString();
+            let d = JSON.parse(localStorage.getItem('_st')) || { d: t, c: 0 };
+            if (d.d !== t) d = { d: t, c: 0 };
+            document.getElementById('l_m').innerText = `QUEDAN: ${LIMIT - d.c} SUBIDAS`;
+            return d;
         }
 
-        d.forEach((m, i) => {
-            const c = document.createElement('div');
-            c.className = `m-card ${m.verificado ? 'vip' : ''}`;
-            c.style.animationDelay = `${(i % MODS_PER_PAGE) * 0.08}s`;
-            c.innerHTML = `
-                <h3>${m.nombre}</h3>
-                <div class="m-meta">
-                    <span><i class="fa-solid fa-user-ninja"></i> <b>${m.autor}</b></span>
-                    <span><i class="fa-solid fa-clock"></i> ${new Date(m.fecha_subida).toLocaleDateString()}</span>
-                </div>
-                <div class="m-body">${m.descripcion || 'Sin especificaciones por el autor.'}</div>
-                <button class="btn-d" onclick="t_d('${m.id}', '${m.nombre}')">
-                    <i class="fa-solid fa-download"></i> OBTENER ARCHIVO
-                </button>
-                <textarea id="r-${m.id}" style="display:none">${JSON.stringify(m.comando_json)}</textarea>
-            `;
-            if (m.verificado) v_g.appendChild(c);
-            else c_g.appendChild(c);
-        });
-
-        if (d.length < MODS_PER_PAGE) {
-            const loadBtn = document.getElementById('load-more-btn');
-            if(loadBtn) loadBtn.style.display = 'none';
-        } else {
-            createLoadMoreButton();
+        function h_f(i) {
+            const f = i.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = (e) => {
+                try { JSON.parse(e.target.result); document.getElementById('j_r').value = e.target.result;
+                document.getElementById('f_s').innerText = "✅ " + f.name;
+                if(!document.getElementById('n_m').value) document.getElementById('n_m').value = f.name.replace('.json', '');
+                } catch { alert("JSON inválido."); }
+            };
+            r.readAsText(f);
         }
 
-        if (!v_g.innerHTML) v_g.innerHTML = '<p style="color:#8e8ea8; grid-column: 1/-1; text-align:center;">No hay destacados.</p>';
-    } catch (err) { console.error(err); }
-}
+        async function s_w() {
+            const l = g_l(); if (l.c >= LIMIT) return alert("Límite diario alcanzado.");
+            const n = document.getElementById('n_m').value, a = document.getElementById('a_m').value || 'Anónimo', d = document.getElementById('d_m').value, j = document.getElementById('j_r').value;
+            if (!n || !j) return alert("Faltan datos.");
+            const b = document.getElementById('b_s'); b.disabled = true; b.innerText = "SUBIENDO...";
+            const { error: e } = await sb.from('mods').insert([{ nombre: n, autor: a, descripcion: d, comando_json: JSON.parse(j) }]);
+            if (e) { alert(e.message); b.disabled = false; return; }
+            l.c++; localStorage.setItem('_st', JSON.stringify(l));
+            location.reload();
+        }
 
-function createLoadMoreButton() {
-    if (document.getElementById('load-more-btn')) return;
-    const btn = document.createElement('button');
-    btn.id = 'load-more-btn';
-    btn.className = 'btn-d';
-    btn.style.margin = '40px auto';
-    btn.style.width = '250px';
-    btn.innerHTML = '<i class="fa-solid fa-plus"></i> CARGAR MÁS MODS';
-    btn.onclick = () => {
-        currentPage++;
-        f_m(true);
-    };
-    document.getElementById('g_c').after(btn);
-}
+        async function f_m(append = false) {
+            const from = currentPage * PAGE_SIZE, to = from + PAGE_SIZE - 1;
+            const { data: d, error: e } = await sb.from('mods').select('*').order('fecha_subida', { ascending: false }).range(from, to);
+            if (e) return;
+            const gv = document.getElementById('g_v'), gc = document.getElementById('g_c');
+            if (!append) { gv.innerHTML = ''; gc.innerHTML = ''; }
+            d.forEach(m => {
+                const p = m.votos_total > 0 ? (m.estrellas_total / m.votos_total).toFixed(1) : "0.0";
+                const c = document.createElement('div'); c.className = `m-card ${m.verificado ? 'vip' : ''}`;
+                c.innerHTML = `
+                    <div class="card-stats">
+                        <span><i class="fa-solid fa-download"></i> <span id="dc-${m.id}">${m.descargas}</span></span>
+                        <span><i class="fa-solid fa-star"></i> ${p} (${m.votos_total})</span>
+                    </div>
+                    <h3>${m.nombre}</h3>
+                    <p style="font-size:0.8rem; color:var(--td); margin-bottom:10px;">por <b>${m.autor}</b></p>
+                    <div class="m-body">${m.descripcion || 'Sin descripción.'}</div>
+                    <div class="rating-row">
+                        <div class="stars" id="st-${m.id}">
+                            ${[1,2,3,4,5].map(s => `<i class="fa-solid fa-star" onclick="votar('${m.id}', ${s})"></i>`).join('')}
+                        </div>
+                    </div>
+                    <button class="btn-dl" onclick="dl('${m.id}', '${m.nombre}')"><i class="fa-solid fa-download"></i> DESCARGAR</button>
+                    <textarea id="raw-${m.id}" style="display:none">${JSON.stringify(m.comando_json)}</textarea>
+                `;
+                if (m.verificado) gv.appendChild(c); else gc.appendChild(c);
+            });
+            const lb = document.getElementById('btn-load');
+            if (d.length === PAGE_SIZE) lb.classList.remove('hidden'); else lb.classList.add('hidden');
+        }
 
-function t_d(i, f) {
-    const r = document.getElementById('r-' + i).value;
-    const b = new Blob([r], { type: 'application/json' });
-    const u = URL.createObjectURL(b);
-    const a = document.createElement('a');
-    a.href = u;
-    a.download = `${f}.json`;
-    document.body.appendChild(a);
-    a.click();
-    URL.revokeObjectURL(u);
-    document.body.removeChild(a);
-}
+        async function votar(id, s) {
+            if (localStorage.getItem('v_' + id)) return alert("Ya votaste este mod.");
+            const { error: e } = await sb.rpc('votar_mod', { mod_id: id, estrellas: s });
+            if (e) return alert("Error al votar: " + e.message);
+            localStorage.setItem('v_' + id, 'true'); alert("¡Voto registrado! ⭐"); location.reload();
+        }
 
-window.onload = () => { g_l(); f_m(); };
+        async function dl(id, n) {
+            await sb.rpc('sumar_descarga', { mod_id: id });
+            const j = document.getElementById('raw-' + id).value;
+            const b = new Blob([j], { type: 'application/json' }), u = URL.createObjectURL(b), a = document.createElement('a');
+            a.href = u; a.download = n + ".json"; a.click();
+            const el = document.getElementById('dc-' + id); el.innerText = parseInt(el.innerText) + 1;
+        }
+
+        function loadMore() { currentPage++; f_m(true); }
+        window.onload = () => { g_l(); f_m(); };
+    </script>
+</body>
+</html>
