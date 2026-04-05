@@ -1,412 +1,159 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mirage Workshop Pro | The Hub</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --p: #9146ff;
-            --pg: rgba(145, 70, 255, 0.4);
-            --s: #00f593;
-            --g: #ffb400;
-            --bb: #050508;
-            --bc: rgba(20, 20, 28, 0.7);
-            --bi: #0a0a0f;
-            --tm: #ffffff;
-            --td: #8e8ea8;
-            --br: rgba(255, 255, 255, 0.05);
-            --gb: rgba(145, 70, 255, 0.15);
-            --er: #ff4747;
-            --tr: all 0.5s cubic-bezier(0.2, 1, 0.2, 1);
+const U_S = 'https://wztjpzdcuokptmhemzsq.supabase.co';
+const K_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dGpwemRjdW9rcHRtaGVtenNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNTU4MjMsImV4cCI6MjA5MDkzMTgyM30.cYKZCvV4KfvrNd-RZZLNMTnRPWMreQgr9ClCP3wehR0';
+const s_c = window.supabase.createClient(U_S, K_S);
+
+const L_D = 5;
+const MODS_PER_PAGE = 9;
+let currentPage = 0;
+let totalLoaded = 0;
+
+function g_l() {
+    const t = new Date().toDateString();
+    let d = JSON.parse(localStorage.getItem('_m_stats')) || { d: t, c: 0 };
+    if (d.d !== t) d = { d: t, c: 0 };
+    const r = Math.max(0, L_D - d.c);
+    const m = document.getElementById('l_m');
+    if(m) m.innerText = `Subidas disponibles para hoy: ${r} / ${L_D}`;
+    return d;
+}
+
+function u_l() {
+    const d = g_l();
+    d.c += 1;
+    localStorage.setItem('_m_stats', JSON.stringify(d));
+    g_l();
+}
+
+function h_f(i) {
+    const f = i.files[0];
+    if (!f) return;
+    if (f.size > 2 * 1024 * 1024) {
+        alert("Archivo excedido.");
+        i.value = "";
+        return;
+    }
+    const r = new FileReader();
+    r.onload = (e) => {
+        try {
+            const c = e.target.result;
+            JSON.parse(c);
+            document.getElementById('j_r').value = c;
+            const n = document.getElementById('n_m');
+            if(!n.value) n.value = f.name.replace('.json', '');
+            const s = document.getElementById('f_s');
+            s.innerText = "ARCHIVO LISTO: " + f.name;
+            s.parentElement.style.borderColor = "#00f593";
+        } catch (err) {
+            alert("JSON corrupto.");
+            i.value = "";
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; border: none; text-decoration: none; list-style: none; }
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bb);
-            color: var(--tm);
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 5% 5%, rgba(145, 70, 255, 0.07) 0%, transparent 35%),
-                radial-gradient(circle at 95% 95%, rgba(0, 245, 147, 0.04) 0%, transparent 35%),
-                linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+    };
+    r.readAsText(f);
+}
+
+async function s_w() {
+    const l = g_l();
+    if (l.c >= L_D) return alert("Cuota diaria completa.");
+    const b = document.getElementById('b_s');
+    const n = document.getElementById('n_m').value;
+    const a = document.getElementById('a_m').value || 'Anónimo';
+    const d = document.getElementById('d_m').value;
+    const j = document.getElementById('j_r').value;
+    if (!n || !j) return alert("Faltan datos críticos.");
+    try {
+        b.disabled = true;
+        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SINCRONIZANDO...';
+        const { error: e } = await s_c.from('mods').insert([{ nombre: n, autor: a, descripcion: d, comando_json: JSON.parse(j) }]);
+        if (e) throw e;
+        u_l();
+        b.style.background = "#00f593";
+        b.innerHTML = '<i class="fa-solid fa-check"></i> ÉXITO TOTAL';
+        setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+        alert("Error de red: " + err.message);
+        b.disabled = false;
+        b.innerHTML = '<i class="fa-solid fa-bolt"></i> DESPLEGAR AL WORKSHOP';
+    }
+}
+
+async function f_m(append = false) {
+    try {
+        const from = currentPage * MODS_PER_PAGE;
+        const to = from + MODS_PER_PAGE - 1;
+
+        const { data: d, error: e } = await s_c
+            .from('mods')
+            .select('*')
+            .order('fecha_subida', { ascending: false })
+            .range(from, to);
+
+        if (e) throw e;
+
+        const v_g = document.getElementById('g_v');
+        const c_g = document.getElementById('g_c');
+
+        if (!append) {
+            v_g.innerHTML = '';
+            c_g.innerHTML = '';
         }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: var(--bb); }
-        ::-webkit-scrollbar-thumb { background: var(--p); border-radius: 20px; }
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 9999;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem 10%;
-            background: rgba(5, 5, 8, 0.85);
-            backdrop-filter: blur(25px);
-            border-bottom: 1px solid var(--br);
-        }
-        .b-nav { font-size: 1.8rem; font-weight: 900; letter-spacing: -1.5px; display: flex; align-items: center; gap: 15px; }
-        .b-nav i { color: var(--p); filter: drop-shadow(0 0 10px var(--pg)); }
-        .b-nav span { background: linear-gradient(to right, var(--p), var(--s)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .s-pill {
-            background: rgba(145, 70, 255, 0.05);
-            color: var(--p);
-            padding: 8px 20px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            border: 1px solid var(--gb);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-        .s-pill span { width: 8px; height: 8px; background: var(--s); border-radius: 50%; box-shadow: 0 0 10px var(--s); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
-        .container { max-width: 1300px; margin: 0 auto; padding: 0 25px; }
-        .h-section { padding: 100px 0 60px; text-align: center; animation: fIn 1.2s ease; }
-        .h-section h1 { font-size: 5rem; font-weight: 900; letter-spacing: -3px; line-height: 0.9; margin-bottom: 25px; }
-        .h-section p { color: var(--td); font-size: 1.3rem; max-width: 700px; margin: 0 auto; line-height: 1.6; }
-        .u-card {
-            background: var(--bc);
-            border: 1px solid var(--br);
-            border-radius: 40px;
-            padding: 60px;
-            backdrop-filter: blur(40px);
-            margin: 20px 0 100px;
-            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
-            position: relative;
-            z-index: 10;
-        }
-        .u-card::after {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: 40px; padding: 2px;
-            background: linear-gradient(135deg, var(--gb), transparent, var(--gb));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
-        }
-        .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; margin-bottom: 35px; }
-        .f-group { display: flex; flex-direction: column; gap: 12px; }
-        .f-group label { font-size: 0.8rem; font-weight: 800; color: var(--td); text-transform: uppercase; letter-spacing: 2px; padding-left: 5px; }
-        input, textarea {
-            background: var(--bi);
-            border: 1px solid var(--br);
-            color: var(--tm);
-            padding: 20px;
-            border-radius: 20px;
-            font-size: 1.05rem;
-            transition: var(--tr);
-            font-family: inherit;
-        }
-        input:focus, textarea:focus { border-color: var(--p); box-shadow: 0 0 30px rgba(145, 70, 255, 0.2); background: #000; }
-        .dz {
-            border: 2px dashed var(--br);
-            border-radius: 25px;
-            padding: 50px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--tr);
-            margin-bottom: 35px;
-            background: rgba(255, 255, 255, 0.01);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-        .dz:hover { border-color: var(--p); background: rgba(145, 70, 255, 0.03); transform: scale(0.99); }
-        .dz i { font-size: 3.5rem; color: var(--p); filter: drop-shadow(0 0 15px var(--pg)); }
-        .dz h4 { font-size: 1.2rem; font-weight: 700; }
-        .dz span { font-size: 0.85rem; color: var(--td); }
-        .btn-l {
-            background: linear-gradient(135deg, var(--p), #6d28d9);
-            color: #fff;
-            padding: 24px;
-            border-radius: 22px;
-            font-size: 1.2rem;
-            font-weight: 900;
-            cursor: pointer;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            transition: var(--tr);
-            box-shadow: 0 10px 40px rgba(145, 70, 255, 0.3);
-        }
-        .btn-l:hover { transform: translateY(-7px); box-shadow: 0 20px 60px var(--pg); filter: brightness(1.1); }
-        .btn-l:active { transform: translateY(-2px); }
-        .btn-l:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; transform: none; }
-        .l-text { text-align: center; margin-top: 20px; font-size: 0.85rem; color: var(--td); font-weight: 600; letter-spacing: 0.5px; }
-        .v-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 50px;
-            border-bottom: 1px solid var(--br);
-            padding-bottom: 20px;
-        }
-        .v-header h2 { font-size: 2.5rem; font-weight: 900; letter-spacing: -1.5px; display: flex; align-items: center; gap: 20px; }
-        .v-header h2 i { color: var(--g); text-shadow: 0 0 20px rgba(255, 180, 0, 0.4); }
-        .m-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 40px;
-            margin-bottom: 120px;
-        }
-        .m-card {
-            background: var(--bc);
-            border: 1px solid var(--br);
-            border-radius: 30px;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            transition: var(--tr);
-            position: relative;
-            overflow: hidden;
-            animation: sUp 0.8s cubic-bezier(0.2, 1, 0.2, 1) backwards;
-        }
-        .m-card:hover { transform: translateY(-15px) scale(1.02); border-color: var(--p); background: rgba(25, 25, 35, 0.9); box-shadow: 0 30px 70px rgba(0,0,0,0.5); }
-        .m-card.vip { border: 1px solid rgba(255, 180, 0, 0.25); background: linear-gradient(180deg, var(--bc), rgba(255, 180, 0, 0.02)); }
-        .m-card.vip::before {
-            content: 'VERIFIED'; position: absolute; top: 25px; right: 25px;
-            background: var(--g); color: #000; font-size: 0.65rem; font-weight: 900;
-            padding: 6px 14px; border-radius: 8px; letter-spacing: 1px;
-        }
-        .m-card h3 { font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; color: var(--s); line-height: 1.1; }
-        .m-card.vip h3 { color: var(--g); }
-        .m-meta { font-size: 0.85rem; color: var(--td); margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 15px; }
-        .m-meta span { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 5px 12px; border-radius: 10px; }
-        .m-meta b { color: var(--tm); }
-        .m-body { flex-grow: 1; font-size: 1.05rem; color: #d1d1e0; margin-bottom: 35px; line-height: 1.7; }
-        .btn-d {
-            background: #16161e;
-            color: #fff;
-            padding: 18px;
-            border-radius: 16px;
-            text-align: center;
-            font-weight: 800;
-            border: 1px solid var(--br);
-            transition: var(--tr);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            font-size: 0.95rem;
-        }
-        .btn-d:hover { background: var(--p); border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 20px var(--pg); }
-        .a-box {
-            background: rgba(255, 180, 0, 0.03);
-            border: 1px solid rgba(255, 180, 0, 0.1);
-            color: var(--g);
-            padding: 30px;
-            border-radius: 25px;
-            margin-bottom: 60px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            font-size: 1rem;
-            line-height: 1.5;
-            animation: fIn 1.5s ease;
-        }
-        @keyframes fIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes sUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
-        .hidden { display: none; }
-        footer { text-align: center; padding: 100px 20px; color: var(--td); border-top: 1px solid var(--br); margin-top: 100px; background: rgba(0,0,0,0.2); }
-        footer b { color: var(--p); }
-        @media (max-width: 900px) {
-            .f-grid { grid-template-columns: 1fr; }
-            .h-section h1 { font-size: 3rem; }
-            .u-card { padding: 30px; }
-            .m-grid { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-    <nav>
-        <div class="b-nav">
-            <i class="fa-solid fa-square-rss"></i>
-            MIRAGE <span>WORKSHOP</span>
-        </div>
-        <div class="s-pill">
-            <span></span> WORKSHOP ENGINE V1.0
-        </div>
-    </nav>
-    <div class="container">
-        <header class="h-section">
-            <h1>Expand Your World</h1>
-            <p>La base de datos definitiva para el Mirage Controller. Subí tus configuraciones JSON y descargá la magia de la comunidad.</p>
-        </header>
-        <section class="u-card">
-            <div style="margin-bottom: 40px; text-align: center;">
-                <h2 style="font-size: 2.2rem; margin-bottom: 10px;">📤 Publicar Nueva Entrada</h2>
-                <p style="color: var(--td);">Completá los datos y subí tu archivo para la posteridad.</p>
-            </div>
-            <div class="f-grid">
-                <div class="f-group">
-                    <label>Nombre del Módulo</label>
-                    <input type="text" id="n_m" placeholder="Ej: Super_Action_v1">
+
+        d.forEach((m, i) => {
+            const c = document.createElement('div');
+            c.className = `m-card ${m.verificado ? 'vip' : ''}`;
+            c.style.animationDelay = `${(i % MODS_PER_PAGE) * 0.08}s`;
+            c.innerHTML = `
+                <h3>${m.nombre}</h3>
+                <div class="m-meta">
+                    <span><i class="fa-solid fa-user-ninja"></i> <b>${m.autor}</b></span>
+                    <span><i class="fa-solid fa-clock"></i> ${new Date(m.fecha_subida).toLocaleDateString()}</span>
                 </div>
-                <div class="f-group">
-                    <label>Identificación de Autor</label>
-                    <input type="text" id="a_m" placeholder="@usuario_pro">
-                </div>
-            </div>
-            <div class="f-group" style="margin-bottom: 35px;">
-                <label>Detalles Técnicos / Descripción</label>
-                <textarea id="d_m" rows="4" placeholder="Describe qué hace este comando, requisitos o créditos..."></textarea>
-            </div>
-            <label for="f_u" class="dz" id="dz_ui">
-                <i class="fa-solid fa-file-export"></i>
-                <h4 id="f_s">Arrastrá tu archivo .json</h4>
-                <span>Límite de integridad: 2MB</span>
-                <input type="file" id="f_u" accept=".json" class="hidden" onchange="h_f(this)">
-            </label>
-            <input type="hidden" id="j_r">
-            <button class="btn-l" id="b_s" onclick="s_w()">
-                <i class="fa-solid fa-bolt"></i> DESPLEGAR AL WORKSHOP
-            </button>
-            <p class="l-text" id="l_m">Calculando cuota de subida diaria...</p>
-        </section>
-        <div class="a-box">
-            <i class="fa-solid fa-circle-exclamation" style="font-size: 2.5rem;"></i>
-            <div>
-                <b>Protocolo de Seguridad:</b> Los archivos en "Feed Global" son contribuciones de terceros. 
-                Recomendamos verificar el contenido del JSON antes de integrarlo en setups de producción.
-            </div>
-        </div>
-        <div class="v-header">
-            <h2><i class="fa-solid fa-crown"></i> ELITE SELECTION</h2>
-        </div>
-        <div id="g_v" class="m-grid"></div>
-        <div class="v-header" style="margin-top: 80px;">
-            <h2><i class="fa-solid fa-globe"></i> GLOBAL FEED</h2>
-        </div>
-        <div id="g_c" class="m-grid"></div>
-    </div>
-    <footer>
-        <p><b>MIRAGE CONTROLLER HUB</b> &copy; 2026</p>
-        <p style="margin-top: 15px; font-size: 0.9rem;">The code was built for the community. Stay <b>Polenta</b>.</p>
-    </footer>
-    <script>
-        const U_S = 'https://wztjpzdcuokptmhemzsq.supabase.co';
-        const K_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dGpwemRjdW9rcHRtaGVtenNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNTU4MjMsImV4cCI6MjA5MDkzMTgyM30.cYKZCvV4KfvrNd-RZZLNMTnRPWMreQgr9ClCP3wehR0';
-        const s_c = window.supabase.createClient(U_S, K_S);
-        const L_D = 5;
-        function g_l() {
-            const t = new Date().toDateString();
-            let d = JSON.parse(localStorage.getItem('_m_stats')) || { d: t, c: 0 };
-            if (d.d !== t) d = { d: t, c: 0 };
-            const r = Math.max(0, L_D - d.c);
-            const m = document.getElementById('l_m');
-            if(m) m.innerText = `Subidas disponibles para hoy: ${r} / ${L_D}`;
-            return d;
+                <div class="m-body">${m.descripcion || 'Sin especificaciones por el autor.'}</div>
+                <button class="btn-d" onclick="t_d('${m.id}', '${m.nombre}')">
+                    <i class="fa-solid fa-download"></i> OBTENER ARCHIVO
+                </button>
+                <textarea id="r-${m.id}" style="display:none">${JSON.stringify(m.comando_json)}</textarea>
+            `;
+            if (m.verificado) v_g.appendChild(c);
+            else c_g.appendChild(c);
+        });
+
+        if (d.length < MODS_PER_PAGE) {
+            const loadBtn = document.getElementById('load-more-btn');
+            if(loadBtn) loadBtn.style.display = 'none';
+        } else {
+            createLoadMoreButton();
         }
-        function u_l() {
-            const d = g_l();
-            d.c += 1;
-            localStorage.setItem('_m_stats', JSON.stringify(d));
-            g_l();
-        }
-        function h_f(i) {
-            const f = i.files[0];
-            if (!f) return;
-            if (f.size > 2 * 1024 * 1024) {
-                alert("Archivo excedido.");
-                i.value = "";
-                return;
-            }
-            const r = new FileReader();
-            r.onload = (e) => {
-                try {
-                    const c = e.target.result;
-                    JSON.parse(c);
-                    document.getElementById('j_r').value = c;
-                    const n = document.getElementById('n_m');
-                    if(!n.value) n.value = f.name.replace('.json', '');
-                    const s = document.getElementById('f_s');
-                    s.innerText = "ARCHIVO LISTO: " + f.name;
-                    s.parentElement.style.borderColor = "#00f593";
-                } catch (err) {
-                    alert("JSON corrupto.");
-                    i.value = "";
-                }
-            };
-            r.readAsText(f);
-        }
-        async function s_w() {
-            const l = g_l();
-            if (l.c >= L_D) return alert("Cuota diaria completa.");
-            const b = document.getElementById('b_s');
-            const n = document.getElementById('n_m').value;
-            const a = document.getElementById('a_m').value || 'Anónimo';
-            const d = document.getElementById('d_m').value;
-            const j = document.getElementById('j_r').value;
-            if (!n || !j) return alert("Faltan datos críticos.");
-            try {
-                b.disabled = true;
-                b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SINCRONIZANDO...';
-                const { error: e } = await s_c.from('mods').insert([{ nombre: n, autor: a, descripcion: d, comando_json: JSON.parse(j) }]);
-                if (e) throw e;
-                u_l();
-                b.style.background = "#00f593";
-                b.innerHTML = '<i class="fa-solid fa-check"></i> ÉXITO TOTAL';
-                setTimeout(() => location.reload(), 1500);
-            } catch (err) {
-                alert("Error de red: " + err.message);
-                b.disabled = false;
-                b.innerHTML = '<i class="fa-solid fa-bolt"></i> DESPLEGAR AL WORKSHOP';
-            }
-        }
-        async function f_m() {
-            try {
-                const { data: d, error: e } = await s_c.from('mods').select('*').order('fecha_subida', { ascending: false });
-                if (e) throw e;
-                const v_g = document.getElementById('g_v');
-                const c_g = document.getElementById('g_c');
-                v_g.innerHTML = '';
-                c_g.innerHTML = '';
-                d.forEach((m, i) => {
-                    const c = document.createElement('div');
-                    c.className = `m-card ${m.verificado ? 'vip' : ''}`;
-                    c.style.animationDelay = `${i * 0.08}s`;
-                    c.innerHTML = `
-                        <h3>${m.nombre}</h3>
-                        <div class="m-meta">
-                            <span><i class="fa-solid fa-user-ninja"></i> <b>${m.autor}</b></span>
-                            <span><i class="fa-solid fa-clock"></i> ${new Date(m.fecha_subida).toLocaleDateString()}</span>
-                        </div>
-                        <div class="m-body">${m.descripcion || 'Sin especificaciones por el autor.'}</div>
-                        <button class="btn-d" onclick="t_d('${m.id}', '${m.nombre}')">
-                            <i class="fa-solid fa-download"></i> OBTENER ARCHIVO
-                        </button>
-                        <textarea id="r-${m.id}" style="display:none">${JSON.stringify(m.comando_json)}</textarea>
-                    `;
-                    if (m.verificado) v_g.appendChild(c);
-                    else c_g.appendChild(c);
-                });
-                if (!v_g.innerHTML) v_g.innerHTML = '<p style="color:#8e8ea8; grid-column: 1/-1; text-align:center;">No hay mods en Elite Selection aún.</p>';
-            } catch (err) { console.error(err); }
-        }
-        function t_d(i, f) {
-            const r = document.getElementById('r-' + i).value;
-            const b = new Blob([r], { type: 'application/json' });
-            const u = URL.createObjectURL(b);
-            const a = document.createElement('a');
-            a.href = u;
-            a.download = `${f}.json`;
-            document.body.appendChild(a);
-            a.click();
-            URL.revokeObjectURL(u);
-            document.body.removeChild(a);
-        }
-        window.onload = () => { g_l(); f_m(); };
-    </script>
-</body>
-</html>
+
+        if (!v_g.innerHTML) v_g.innerHTML = '<p style="color:#8e8ea8; grid-column: 1/-1; text-align:center;">No hay destacados.</p>';
+    } catch (err) { console.error(err); }
+}
+
+function createLoadMoreButton() {
+    if (document.getElementById('load-more-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'load-more-btn';
+    btn.className = 'btn-d';
+    btn.style.margin = '40px auto';
+    btn.style.width = '250px';
+    btn.innerHTML = '<i class="fa-solid fa-plus"></i> CARGAR MÁS MODS';
+    btn.onclick = () => {
+        currentPage++;
+        f_m(true);
+    };
+    document.getElementById('g_c').after(btn);
+}
+
+function t_d(i, f) {
+    const r = document.getElementById('r-' + i).value;
+    const b = new Blob([r], { type: 'application/json' });
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = u;
+    a.download = `${f}.json`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(u);
+    document.body.removeChild(a);
+}
+
+window.onload = () => { g_l(); f_m(); };
